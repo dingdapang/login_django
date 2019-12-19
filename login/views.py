@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from . import models, forms
 import hashlib
@@ -34,6 +35,7 @@ def make_confirm_string(user):
 
 
 def send_mail(email, code):
+    print(code)
     subject = '来自---的注册确认邮件'
     text_content = '''
         感谢注册本网站，如果你收到了这条消息，说明你的邮箱不提供html链接功能，请联系管理员qq:2608619307
@@ -42,7 +44,7 @@ def send_mail(email, code):
         <p>感谢注册<a href="http://{}/confirm/?code={}" target=blank>dlb.top</a>,</p>
         <p>请点击链接完成邮箱确认！</p>
         <p>此链接有效期{}天</p>    
-        '''.format('127.0.0.1:8001', code, settings.CONFIRM_DAYS)
+        '''.format('127.0.0.1:9000', code, settings.CONFIRM_DAYS)
 
     msg = EmailMultiAlternatives(subject, text_content, settings.EMAIL_HOST_USER, [email])
     msg.attach_alternative(html_content, 'text/html')
@@ -50,7 +52,7 @@ def send_mail(email, code):
 
 
 def user_confirm(request):
-    code = request.GET.get('code', None) # 获取确认码
+    code = request.GET.get('code', None)  # 获取确认码
     message = ''
     try:
         confirm = models.ConfirmString.objects.get(code=code)
@@ -60,7 +62,7 @@ def user_confirm(request):
     c_time = confirm.c_time
     now = timezone.now()
     if now > c_time + datetime.timedelta(settings.CONFIRM_DAYS):
-        confirm.user.delete() # 邮件过期，注册码也会删除掉
+        confirm.user.delete()  # 邮件过期，注册码也会删除掉
         message = '您的邮件已经过期！请重新注册！'
         return render(request, 'login/confirm.html', locals())
     else:
@@ -92,20 +94,19 @@ def login(request):
             # 验证账号密码
             try:
                 user = models.User.objects.get(name=username)
-
             except:
                 message = '用户不存在！'
                 return render(request, 'login/login.html', locals())
 
             if not user.has_confirmed:
-                message = '该用户还未经邮件确认！'
+                message = '该用户还未经邮件确认！,点击这里验证邮箱'
                 return render(request, 'login/login.html', locals())
 
             if user.password == hash_code(password):
                 request.session['is_login'] = True
                 request.session['user_id'] = user.id
                 request.session['user_name'] = user.name
-                return redirect('/index/')
+                return redirect('/blog/index')
             else:
                 message = '密码不正确！'
                 return render(request, 'login/login.html', locals())
@@ -133,7 +134,7 @@ def register(request):
             else:
                 same_name_user = models.User.objects.filter(name=username)
                 if same_name_user:
-                    message = '用户名已存在'
+                    message = '用户名已存在!'
                     return render(request, 'login/login.html', locals())
                 same_name_email = models.User.objects.filter(email=email)
                 if same_name_email:
@@ -146,11 +147,11 @@ def register(request):
                 new_user.sex = sex
                 new_user.save()
 
-                code = make_confirm_string(new_user) # 生成hash码
-                send_mail(email, code) # 发送码邮件进行确认
+                code = make_confirm_string(new_user)  # 生成hash码
+                send_mail(email, code)   # 发送码邮件进行确认
 
                 message = '请前往邮箱进行确认！'
-                return render(request, 'login/confirm.html', locals())
+                return render(request, 'login/login.html', locals())
         else:
             return render(request, 'login/register.html', locals())
     register_form = forms.ResiterForm(request.POST)
@@ -165,3 +166,33 @@ def logout(request):
     # del request.session['user_id']
     # del request.session['user_name']
     return redirect('/login/')
+
+
+def check_email(request):
+    if request.session.get('is_login', None):
+        return redirect('/index/')
+    if request.method == "POST":
+        check_form = forms.CheckForm(request.POST)
+        message = "请检查填写的内容！"
+        if check_form.is_valid():
+            email = check_form.cleaned_data.get('email')
+            try:
+                user = models.User.objects.filter(email=email).first()
+                if user:
+                    if int(user.has_confirmed) == 1:
+                        message = '该邮箱已被验证，如果是您的邮箱，请联系管理员！'
+                        return render(request, 'login/checkemail.html', locals())
+                    else:
+                        cod = str(models.ConfirmString.objects.get(user=user))
+                        code = cod.split(' ')[-1]
+                        send_mail(email, code)  # 发送码邮件进行确认
+                        message = '请前往邮箱进行确认！,确认完毕点击这里可以进行登录'
+                        return render(request, 'login/checkemail.html', locals())
+                else:
+                    message = '未知邮箱，请检查邮箱信息，如想更换邮箱，请点击下方更换邮箱'
+                    return render(request, 'login/checkemail.html', locals())
+            except ObjectDoesNotExist:
+                message2 = '邮箱与初始邮箱不符合，请输入正确的邮箱，或者点击下方更改绑定邮箱！'
+                return render(request, 'login/checkemail.html', locals())
+    check_form = forms.CheckForm(request.POST)
+    return render(request, 'login/checkemail.html', locals())

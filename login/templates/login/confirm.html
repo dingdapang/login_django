@@ -1,13 +1,20 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>注册确认</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- 上述meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.bootcss.com/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'login/css/login.css' %}" rel="stylesheet"/>
 </head>
 <body>
-<h1 style="margin-left: 100px; ">{{ message }}</h1>
+<img src="{% static "blog/picture/black-logo.png" %}" alt="Python">
+<h3 class="">{{ message }}</h3>
 <script>
-    window.setTimeout("window.location='/login/'",2000);
+    window.setTimeout("window.location='/login/'",10000);
 </script>
 
 </body>

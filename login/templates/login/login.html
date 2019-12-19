@@ -11,6 +11,7 @@
     <title>登录</title>
 </head>
 <body>
+<a href="/blog/"><img style="width: 200px; height: 50px" src="{% static "login/image/black-logo.png" %}" alt="Python"></a>
 <div class="container">
     <div class="col" >
 
@@ -18,6 +19,8 @@
             {% csrf_token %}
             {% if login_form.captcha.errors %}
                     <div class="alert alert-warning">{{ login_form.captcha.errors }}</div>
+                {% elif message == '该用户还未经邮件确认！,点击这里验证邮箱' %}
+                    <div><a class="alert alert-warning" href="/check/">{{ message }}</a></div>
                 {% elif message %}
                     <div class="alert alert-warning">{{ message }}</div>
                 {% endif %}
