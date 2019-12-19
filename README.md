@@ -1,6 +1,6 @@
-##Django通用登录模块
+###Django通用登录模块
 
-##使用方法：
+###使用方法：
 
 创建虚拟环境
 
@@ -14,7 +14,7 @@
 
 
 
-##urls.py路由设置
+###urls.py路由设置
 
     from django.contrib import admin
     from django.urls import path, include
@@ -32,7 +32,7 @@
         path('check/', views.check_email),
     ]
    
-##2019-12-19新增
+###2019-12-19新增
 
 
 即使注册的时候没有验证邮箱，也可以通过登录的时候重新输入注册的邮箱，完成邮箱验证
